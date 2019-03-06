@@ -4,7 +4,7 @@ import config
 import scipy
 import csv
 import librosa
-import mir_eval
+# import mir_eval
 import pandas as pd
 
 def nan_helper(y):

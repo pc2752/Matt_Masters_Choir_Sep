@@ -12,6 +12,7 @@ from random import randint
 import librosa
 import sig_process
 import matplotlib.pyplot as plt
+import soundfile as sf
 
 class Model(object):
     def __init__(self):
@@ -117,9 +118,9 @@ class DeepConvSep(Model):
 
         feat_file.close()
 
-        in_batches_mix_stft, nchunks_in = utils.generate_overlapadd(mix_stft)
+        in_batches_mix_stft, nchunks_in = utils.generate_overlapadd(abs(mix_stft))
 
-        return in_batches_mix_stft, part_stft, nchunks_in
+        return in_batches_mix_stft, np.angle(mix_stft), part_stft, nchunks_in
 
     def read_input_wav_file(self, file_name):
         """
@@ -142,34 +143,50 @@ class DeepConvSep(Model):
 
 
 
-    def test_file(self, file_name):
+    def test_file(self, file_name, plot = False):
         """
         Function to extract multi pitch from file. Currently supports only HDF5 files.
         """
         sess = tf.Session()
         self.load_model(sess, log_dir = config.log_dir)
-        self.sep_file(file_name, sess)
-        return scores
+        self.sep_file(file_name, sess, plot)
 
 
-    def sep_file(self, file_name, sess):
-        in_batches_mix_stft, part_stft, nchunks_in = self.read_input_file(file_name)
 
-        import pdb;pdb.set_trace()
-        out_batches_atb = []
-        for in_batch_hcqt in in_batches_hcqt:
-            feed_dict = {self.input_placeholder: in_batch_hcqt, self.is_train: False}
-            out_atb = sess.run(self.outputs, feed_dict=feed_dict)
-            out_batches_atb.append(out_atb)
-        out_batches_atb = np.array(out_batches_atb)
-        out_batches_atb = utils.overlapadd(out_batches_atb.reshape(out_batches_atb.shape[0], config.batch_size, config.max_phr_len, -1),
-                         nchunks_in)
-        out_batches_atb = out_batches_atb[:atb.shape[0]]
-        time_1, ori_freq = utils.process_output(atb)
-        time_2, est_freq = utils.process_output(out_batches_atb)
+    def sep_file(self, file_name, sess, plot):
+        in_batches_stft, phase, part_stft, nchunks_in = self.read_input_file(file_name)
 
-        scores = mir_eval.multipitch.evaluate(time_1, ori_freq, time_2, est_freq)
-        return scores
+        out_batches_stft = []
+        for in_batch_stft in in_batches_stft:
+            feed_dict = {self.input_placeholder: np.expand_dims(in_batch_stft,-1)}
+            out_stft = sess.run(self.outputs, feed_dict=feed_dict)
+            out_batches_stft.append(out_stft)
+
+        out_batches_stft = np.array(out_batches_stft)
+        
+        out_batches_stft = utils.overlapadd(out_batches_stft.reshape(out_batches_stft.shape[0],out_batches_stft.shape[1],out_batches_stft.shape[2],-1),nchunks_in)
+        out_batches_stft = out_batches_stft.reshape(out_batches_stft.shape[0], 513,-1)
+
+
+        out_batches_stft = out_batches_stft[:phase.shape[0]]
+
+        if plot:
+            plt.figure(1)
+            plt.subplot(211)
+            plt.imshow(part_stft[:,:,0].T, origin = 'lower', aspect = 'auto')
+            plt.subplot(212)
+            plt.imshow(out_batches_stft[:,:,0].T, origin = 'lower', aspect = 'auto')
+            plt.show()
+
+
+        audio_1_ori = librosa.istft(part_stft[:,:,0].T, win_length = config.nfft, hop_length=config.hopsize, window=config.window)
+
+        audio_1_output = librosa.istft(out_batches_stft[:,:,0].T, win_length = config.nfft, hop_length=config.hopsize, window=config.window)
+
+        sf.write(file_name+"_1_ori.wav", audio_1_ori, int(config.fs))
+
+        sf.write(file_name+"_1_output.wav", audio_1_output, int(config.fs))
+
 
         # import pdb;pdb.set_trace()
 

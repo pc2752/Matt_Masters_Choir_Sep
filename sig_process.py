@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import sys
 import h5py
 import pyworld as pw
-from reduce import sp_to_mfsc, mfsc_to_sp, ap_to_wbap,wbap_to_ap, get_warped_freqs, sp_to_mgc, mgc_to_sp, mgc_to_mfsc, mfsc_to_mgc
-from acoufe import pitch
+# from reduce import sp_to_mfsc, mfsc_to_sp, ap_to_wbap,wbap_to_ap, get_warped_freqs, sp_to_mgc, mgc_to_sp, mgc_to_mfsc, mfsc_to_mgc
+# from acoufe import pitch
 import soundfile as sf
 import config
 import utils
