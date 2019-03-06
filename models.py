@@ -173,9 +173,9 @@ class DeepConvSep(Model):
         if plot:
             plt.figure(1)
             plt.subplot(211)
-            plt.imshow(part_stft[:,:,0].T, origin = 'lower', aspect = 'auto')
+            plt.imshow(np.log(abs(part_stft[:,:,0].T)), origin = 'lower', aspect = 'auto')
             plt.subplot(212)
-            plt.imshow(out_batches_stft[:,:,0].T, origin = 'lower', aspect = 'auto')
+            plt.imshow(np.log(out_batches_stft[:,:,0].T), origin = 'lower', aspect = 'auto')
             plt.show()
 
 
