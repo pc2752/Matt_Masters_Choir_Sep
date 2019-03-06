@@ -20,19 +20,29 @@ def DeepConvSep_decode(encoded, shape1, shape2, shape3, name = "Decode"):
 
     encoded_2_1_re = tf.reshape(encoded_2_1, shape1, name = name+"_2")
 
-    deconv1 = deconv2d(encoded_2_1_re, shape2, name = name+"_3")
+    deconv1 = tf.layers.conv2d_transpose(encoded_2_1_re, 50, (15, 1),  name = name+"_3")
 
-    deconv2 = tf.nn.relu(deconv2d(deconv1, shape3, name = name+"_4"))
+    deconv2 = tf.layers.conv2d_transpose(deconv1, 50, (1, 513),  name = name+"_4")
 
-    return deconv2
+    output = tf.layers.conv2d(deconv2, 1, (1,1), strides=(1,1),  padding = 'valid', name = name+"_5", activation = None)
+
+    # deconv1 = deconv2d(encoded_2_1_re, shape2, k_h = 15,  name = name+"_3")
+
+    # deconv2 = tf.nn.relu(deconv2d(deconv1, shape3, k_w = 513,name = name+"_4"))
+
+    # import pdb;pdb.set_trace()
+
+    return output
 
 
 
-def DeepConvSep(input_, feat_size = 513, time_context = 30, num_source = 2):
+def DeepConvSep(input_, feat_size = 513, time_context = 30, num_source = 4):
     
     conv1 = tf.layers.conv2d(input_, 50, (1, feat_size), strides=(1, 1), padding='valid', name="F_1", activation = None)
 
     conv2 = tf.layers.conv2d(conv1, 50, (int(time_context/2),1), strides=(1,1),  padding = 'valid', name = "F_2", activation = None)
+
+    # import pdb;pdb.set_trace()
 
     conv2_1 = tf.reshape(conv2, (config.batch_size, -1))
 
@@ -48,50 +58,24 @@ def DeepConvSep(input_, feat_size = 513, time_context = 30, num_source = 2):
     return output
 
 
-def DeepSalience(input_, is_train):
-    conv1 = tf.layers.conv2d(input_, 128, (5, 5), strides=(1, 1), padding='same', name="conv_1", activation = tf.nn.relu)
-
-    conv1 = tf.layers.batch_normalization(conv1, training=is_train)
-
-    conv2 = tf.layers.conv2d(conv1, 64, (5, 5), strides=(1, 1), padding='same', name="conv_2", activation = tf.nn.relu)
-
-    conv2 = tf.layers.batch_normalization(conv2, training=is_train)
-
-    conv3 = tf.layers.conv2d(conv2, 64, (3, 3), strides=(1, 1), padding='same', name="conv_3", activation = tf.nn.relu)
-
-    conv3 = tf.layers.batch_normalization(conv3, training=is_train)
-
-    conv4 = tf.layers.conv2d(conv3, 64, (3, 3), strides=(1, 1), padding='same', name="conv_4", activation = tf.nn.relu)
-
-    conv4 = tf.layers.batch_normalization(conv4, training=is_train)
-
-    conv5 = tf.layers.conv2d(conv4, 64, (3, 70), strides=(1, 1), padding='same', name="conv_5", activation = tf.nn.relu)
-
-    conv5 = tf.layers.batch_normalization(conv5, training=is_train)
-
-    final_layer = tf.layers.conv2d(conv5, 1, (1, 1), strides=(1, 1), padding='same', name="conv_6", activation = None)
-
-    return tf.squeeze(final_layer)
 
 def deconv2d(input_, output_shape,
-       k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
+       k_h=1, k_w=1, d_h=1, d_w=1, stddev=0.02,
        name="deconv2d"):
-  with tf.variable_scope(name):
-    # filter : [height, width, output_channels, in_channels]
-    w = tf.get_variable('w', [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
+
+    w = tf.get_variable('w_'+name, [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
               initializer=tf.random_normal_initializer(stddev=stddev))
-    
+
     # try:
     deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
-                strides=[1, d_h, d_w, 1], name = name)
+                strides=[1, d_h,d_w, 1], name = name, padding = "SAME")
 
-    biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
+    biases = tf.get_variable('biases_'+name, [output_shape[-1]], initializer=tf.constant_initializer(0.0))
     deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
-    # if with_w:
-    #   return deconv, w, biases
-    # else:
-  return deconv
+    return deconv
+
+
 def selu(x):
    alpha = 1.6732632423543772848170429916717
    scale = 1.0507009873554804934193349852946

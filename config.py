@@ -28,17 +28,17 @@ harmonics = [0.5, 1, 2, 3, 4, 5]
 comp_mode = 'mfsc'
 
 # Model parameters
-batch_size = 5
-max_phr_len = 50
+batch_size = 30
+max_phr_len = 30
 max_models_to_keep = 10
 log_dir = './log_all_but_1/'
 init_lr = 0.0001
 batches_per_epoch_train = 100
 batches_per_epoch_val = 10
-samples_per_file = 5
+samples_per_file = 30
 num_epochs = 3000
 print_every = 1
-validate_every = 10
+validate_every = 1
 save_every = 50
 train_list = [x for x in os.listdir(feats_dir) if x.endswith('.hdf5') and not x.__contains__('1') and not x.startswith('nino')]
 val_list = [x for x in os.listdir(feats_dir) if x.endswith('.hdf5') and x.__contains__('1') or x.startswith('nino')]
